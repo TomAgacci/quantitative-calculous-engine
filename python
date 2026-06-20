@@ -1,0 +1,48 @@
+import math
+
+# -----------------------------------------
+# Quantitative Calculous Engine (Python)
+# -----------------------------------------
+
+# 1. Core equation F(x, y)
+def F(x, y):
+    if x == 0 or y == 0:
+        return float('inf')
+    term1 = (2893**2) / (x * y) * (983472 ** (-123123 * x * y))
+    term2 = (912380 ** (x * y)) * (123123**2)
+    return term1 - term2
+
+# 2. Engine field for the exponential equation
+def E_exp(x, y):
+    val = F(x, y)
+    return val * val
+
+# 3. Optional symmetry field (helps pick a unique solution)
+def E_sym(x, y):
+    return (x - y)**2
+
+# 4. Total engine field
+def E_total(x, y, w_exp=1.0, w_sym=0.0):
+    return w_exp * E_exp(x, y) + w_sym * E_sym(x, y)
+
+# 5. Numerical gradient (finite differences)
+def grad_E_total(x, y, w_exp=1.0, w_sym=0.0, h=1e-6):
+    base = E_total(x, y, w_exp, w_sym)
+    dEx = (E_total(x + h, y, w_exp, w_sym) - base) / h
+    dEy = (E_total(x, y + h, w_exp, w_sym) - base) / h
+    return dEx, dEy
+
+# 6. Gradient descent solver
+def solve_engine(x0, y0, w_exp=1.0, w_sym=0.0, lr=1e-8, steps=2000):
+    x, y = x0, y0
+    for _ in range(steps):
+        dEx, dEy = grad_E_total(x, y, w_exp, w_sym)
+        x -= lr * dEx
+        y -= lr * dEy
+    return x, y
+
+# Example run
+if __name__ == "__main__":
+    x_init, y_init = 1.0, 1.0
+    x_sol, y_sol = solve_engine(x_init, y_init, w_exp=1.0, w_sym=0.1)
+    print("Engine solution:", x_sol, y_sol)
