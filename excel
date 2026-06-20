@@ -1,0 +1,64 @@
+input cells
+
+A1 = x
+B1 = y
+A1 = 1   (initial guess)
+B1 = 1
+
+Step 2 — Compute F(x,y)
+In cell C1:
+= (2893^2)/(A1*B1) * (983472^(-123123*A1*B1)) 
+  - (912380^(A1*B1)) * (123123^2)
+
+  In D1:
+  = C1^2
+
+  In E1:
+  = (A1 - B1)^2
+
+  In F1:
+  = 1*D1 + 0.1*E1
+
+  dE/dx (finite difference)
+In G1:
+= ( (1*((2893^2)/((A1+1E-6)*B1)*(983472^(-123123*(A1+1E-6)*B1)) 
+      - (912380^((A1+1E-6)*B1))*(123123^2))^2 
+    + 0.1*((A1+1E-6)-B1)^2 )
+  - F1 ) / 1E-6
+
+  dE/dy
+In H1:
+= ( (1*((2893^2)/(A1*(B1+1E-6))*(983472^(-123123*A1*(B1+1E-6))) 
+      - (912380^(A1*(B1+1E-6)))*(123123^2))^2 
+    + 0.1*(A1-(B1+1E-6))^2 )
+  - F1 ) / 1E-6
+
+  In A2 (new x):
+  = A1 - 1E-8 * G1
+  In B2 (new y):
+  = B1 - 1E-8 * H1
+
+  OPTIONAL: VBA AUTOMATION LOOP
+  Sub QuantitativeEngine()
+    Dim x As Double, y As Double, lr As Double
+    Dim dEx As Double, dEy As Double
+    lr = 1E-8
+    x = Range("A1").Value
+    y = Range("B1").Value
+    
+    For i = 1 To 2000
+        Range("A1").Value = x
+        Range("B1").Value = y
+        
+        dEx = Range("G1").Value
+        dEy = Range("H1").Value
+        
+        x = x - lr * dEx
+        y = y - lr * dEy
+    Next i
+    
+    Range("A2").Value = x
+    Range("B2").Value = y
+End Sub
+
+  
