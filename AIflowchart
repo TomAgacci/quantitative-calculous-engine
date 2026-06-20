@@ -1,0 +1,17 @@
+flowchart TD
+
+    subgraph Inputs
+        A[Latent z] --> B[Generator G]
+    end
+
+    B --> C[Output (Text/Image)]
+    C --> D[Feature Extractor Φ]
+    D --> E[Fields E₁, E₂, ..., Eₙ]
+    E --> F[Total Field E_total(z)]
+
+    F --> G[Gradient ∇E_total(z)]
+    G --> H[Update z (Gradient Descent)]
+    H --> A
+
+    F --> I[Stop when converged]
+    I --> J[Final Output G(z*)]
