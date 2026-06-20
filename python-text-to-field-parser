@@ -1,0 +1,50 @@
+import re
+from typing import Callable, List, Tuple
+
+# A field is a function E(x, y) -> float
+Field = Callable[[float, float], float]
+
+def make_eq_field(target: float) -> Field:
+    return lambda x, y: (x - target)**2
+
+def make_sum_field(total: float) -> Field:
+    return lambda x, y: (x + y - total)**2
+
+def make_ratio_field(r: float) -> Field:
+    return lambda x, y: (x / y - r)**2 if y != 0 else 1e30
+
+def make_sym_field() -> Field:
+    return lambda x, y: (x - y)**2
+
+def parse_text_to_fields(text: str) -> List[Tuple[str, Field]]:
+    text = text.lower().strip()
+    fields: List[Tuple[str, Field]] = []
+
+    # "x equals N"
+    m = re.search(r"x\s*=\s*([0-9\.]+)", text)
+    if m:
+        val = float(m.group(1))
+        fields.append(("x_equals", make_eq_field(val)))
+
+    # "x + y = N" or "sum is N"
+    m = re.search(r"x\s*\+\s*y\s*=\s*([0-9\.]+)", text)
+    if m:
+        total = float(m.group(1))
+        fields.append(("sum_xy", make_sum_field(total)))
+
+    # "x and y are equal"
+    if "x and y are equal" in text or "x equals y" in text:
+        fields.append(("symmetry", make_sym_field()))
+
+    # "x/y = r"
+    m = re.search(r"x\s*/\s*y\s*=\s*([0-9\.]+)", text)
+    if m:
+        r = float(m.group(1))
+        fields.append(("ratio", make_ratio_field(r)))
+
+    return fields
+
+# Example:
+# text = "x + y = 10 and x and y are equal"
+# fields = parse_text_to_fields(text)
+# E_total(x,y) = sum(E(x,y) for _,E in fields)
