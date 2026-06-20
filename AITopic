@@ -1,0 +1,190 @@
+"""
+Quantitative Calculous Engine (QCE) for Text + Topic
+----------------------------------------------------
+
+This is a self-contained pseudo-implementation you can drop into a repo
+(e.g., engine.py) and extend with a real generator + feature extractor.
+
+Core idea:
+- Latent vector z in R^n
+- Text generator G_text(z) -> str
+- Feature extractor Phi_text(text) -> dict
+- Fields E_k(features, ...) -> non-negative scalars
+- Total field E_total(z) = sum_k w_k E_k
+- Optimize z to minimize E_total (Quantitative Calculous Breakdown in latent space)
+"""
+
+from typing import List, Dict, Callable, Tuple
+
+Vector = List[float]
+FieldFn = Callable[[Dict, ...], float]
+FieldSpec = Tuple[FieldFn, dict]
+
+
+# ============================================================
+# 1. Generator + Feature Extractor (STUBS TO IMPLEMENT)
+# ============================================================
+
+def G_text(z: Vector) -> str:
+    """
+    Latent -> text generator.
+
+    Replace this stub with:
+    - a small language model,
+    - a parametric template system,
+    - or any function that maps a numeric vector to text.
+    """
+    # Example toy behavior (for debugging): encode z as a string
+    return f"Generated text from latent {z}"
+
+
+def Phi_text(text: str) -> Dict:
+    """
+    Text -> feature extractor.
+
+    Should return a dict like:
+    {
+        "topic_scores": {"science": 0.8, "love": 0.1},
+        "length": 42,
+        "sentiment": 0.3
+    }
+
+    Replace this stub with:
+    - a topic classifier,
+    - a sentiment analyzer,
+    - a tokenizer for length, etc.
+    """
+    # Toy placeholder: everything is neutral, short, and off-topic
+    return {
+        "topic_scores": {"science": 0.0, "love": 0.0},
+        "length": len(text.split()),
+        "sentiment": 0.0,
+    }
+
+
+# ============================================================
+# 2. Fields (Topic, Length, Sentiment, etc.)
+# ============================================================
+
+def E_topic(features: Dict, topic: str, target: float, weight: float) -> float:
+    """
+    Penalize deviation from target topic score.
+    topic_scores[topic] is assumed in [0,1].
+    """
+    score = features.get("topic_scores", {}).get(topic, 0.0)
+    return weight * (score - target) ** 2
+
+
+def E_length(features: Dict, target: float, weight: float) -> float:
+    """
+    Penalize deviation from target length (in tokens).
+    """
+    length = float(features.get("length", 0.0))
+    return weight * (length - target) ** 2
+
+
+def E_sentiment(features: Dict, target: float, weight: float) -> float:
+    """
+    Penalize deviation from target sentiment (e.g., -1 to 1).
+    """
+    sentiment = float(features.get("sentiment", 0.0))
+    return weight * (sentiment - target) ** 2
+
+
+# ============================================================
+# 3. Total Field in Latent Space
+# ============================================================
+
+def E_total_text(z: Vector, field_specs: List[FieldSpec]) -> float:
+    """
+    Compute total field E_total(z) = sum_k E_k(features, ...).
+
+    field_specs: list of (field_fn, kwargs) where
+      field_fn(features, **kwargs) -> scalar
+    """
+    text = G_text(z)
+    feats = Phi_text(text)
+    total = 0.0
+    for field_fn, kwargs in field_specs:
+        total += field_fn(feats, **kwargs)
+    return total
+
+
+# ============================================================
+# 4. Gradient via Finite Differences
+# ============================================================
+
+def grad_E_total_text(
+    z: Vector,
+    field_specs: List[FieldSpec],
+    h: float = 1e-3
+) -> Vector:
+    """
+    Approximate gradient of E_total wrt z using finite differences.
+    """
+    base = E_total_text(z, field_specs)
+    grad: Vector = []
+    for i in range(len(z)):
+        z_pert = z.copy()
+        z_pert[i] += h
+        val = E_total_text(z_pert, field_specs)
+        grad_i = (val - base) / h
+        grad.append(grad_i)
+    return grad
+
+
+# ============================================================
+# 5. Latent-Space Optimization (Gradient Descent)
+# ============================================================
+
+def optimize_z_text(
+    z0: Vector,
+    field_specs: List[FieldSpec],
+    lr: float = 1e-2,
+    steps: int = 200
+) -> Vector:
+    """
+    Gradient descent on z to minimize E_total_text.
+    """
+    z = z0.copy()
+    for _ in range(steps):
+        g = grad_E_total_text(z, field_specs)
+        for i in range(len(z)):
+            z[i] -= lr * g[i]
+    return z
+
+
+def QCE_generate_text(z_init: Vector, field_specs: List[FieldSpec]) -> str:
+    """
+    Full Quantitative Calculous Engine call:
+    - optimize z
+    - generate text from z*
+    """
+    z_star = optimize_z_text(z_init, field_specs)
+    return G_text(z_star)
+
+
+# ============================================================
+# 6. Toy Example: Topic = "science", Neutral Sentiment, Short Length
+# ============================================================
+
+if __name__ == "__main__":
+    # Define constraints as fields
+    field_specs: List[FieldSpec] = [
+        # Strongly push toward "science" topic
+        (E_topic,     {"topic": "science", "target": 0.9, "weight": 1.0}),
+        # Neutral sentiment
+        (E_sentiment, {"target": 0.0,      "weight": 0.3}),
+        # Around 40 tokens
+        (E_length,    {"target": 40.0,     "weight": 0.2}),
+    ]
+
+    # Initial latent vector (dimension 4 as an example)
+    z_init: Vector = [0.0, 0.0, 0.0, 0.0]
+
+    # Run the engine
+    text_out = QCE_generate_text(z_init, field_specs)
+
+    print("=== QCE Text Output ===")
+    print(text_out)
+    print("=======================")
