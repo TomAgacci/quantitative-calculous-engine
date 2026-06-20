@@ -1,0 +1,22 @@
+from PIL import Image
+import numpy as np
+from typing import Callable
+
+Field = Callable[[float, float], float]
+
+def image_brightness_feature(path: str) -> float:
+    img = Image.open(path).convert("L")  # grayscale
+    arr = np.array(img, dtype=float)
+    return float(arr.mean())  # 0–255
+
+def make_image_field(target_brightness: float) -> Field:
+    # Example: tie x to brightness, y to normalized brightness
+    return lambda x, y: (x - target_brightness)**2 + (y - target_brightness/255.0)**2
+
+def image_to_field(path: str) -> Field:
+    b = image_brightness_feature(path)
+    return make_image_field(b)
+
+# Example:
+# E_img = image_to_field("example.png")
+# E_total(x,y) += w_img * E_img(x,y)
